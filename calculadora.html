@@ -1,0 +1,98 @@
+﻿<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Sinais USDT</title>
+<style>
+  *{box-sizing:border-box} body{font-family:Arial,sans-serif;background:#0f172a;color:#fff;margin:0;padding:16px}
+  .card{max-width:480px;margin:auto;background:#1e293b;padding:20px;border-radius:18px}
+  h1{text-align:center;color:#22c55e;font-size:22px;margin:0} p.sub{text-align:center;color:#94a3b8;font-size:13px}
+  label{display:block;margin-top:14px;font-size:13px;color:#cbd5e1}
+  input{width:100%;padding:12px;margin-top:5px;border-radius:10px;border:1px solid #334155;background:#0f172a;color:#fff;font-size:16px}
+  button{width:100%;padding:13px;margin-top:18px;background:#22c55e;border:none;border-radius:12px;font-size:16px;font-weight:800;cursor:pointer}
+  button.sec{background:#334155;color:#fff}
+  .res{margin-top:18px;background:#0f172a;padding:16px;border-radius:12px;display:none}
+  .big{font-size:32px;color:#22c55e;font-weight:800;text-align:center}
+  .det{font-size:13px;color:#cbd5e1;line-height:1.7;margin-top:10px}
+  table{width:100%;border-collapse:collapse;margin-top:12px;font-size:12px}
+  th,td{border-bottom:1px solid #334155;padding:7px;text-align:left}
+  th{color:#22c55e}
+  .extra{color:#facc15}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>💰 Calculadora de Sinais</h1>
+  <p class="sub">+0,02 / +0,03 por sinal • Extra 3,00 nas Ter, Sex e Dom</p>
+
+  <label>Total atual (USDT)</label>
+  <input type="number" id="total" value="913.50" step="0.01">
+
+  <label>Último sinal confirmado</label>
+  <input type="number" id="ultimo" value="4.52" step="0.01">
+
+  <label>Até que data?</label>
+  <input type="date" id="dataFim" value="2026-12-20">
+
+  <button onclick="calcular()">Calcular Projeção →</button>
+  <button class="sec" onclick="confirmar()">✅ Confirmar 1 Sinal Agora</button>
+
+  <div class="res" id="res">
+    <div id="dataTxt" style="text-align:center;font-size:13px"></div>
+    <div class="big" id="totalFinal"></div>
+    <div class="det" id="detalhe"></div>
+    <div id="tabela"></div>
+  </div>
+</div>
+
+<script>
+let inc = [0.02, 0.03];
+function calcular(){
+  let total = parseFloat(document.getElementById('total').value) || 0;
+  let atual = parseFloat(document.getElementById('ultimo').value) || 0;
+  let dataFim = new Date(document.getElementById('dataFim').value);
+  let hoje = new Date(); hoje.setHours(0,0,0,0); dataFim.setHours(0,0,0,0);
+  let dias = Math.round((dataFim - hoje)/86400000);
+  if(dias<=0){ alert("Escolhe uma data depois de hoje"); return; }
+
+  let somaNormais=0, extras=0, idx=0, linhas="", ultimo=atual;
+  for(let d=1; d<=dias; d++){
+    let data = new Date(hoje); data.setDate(hoje.getDate()+d);
+    let diaSemana = data.getDay();
+    let diaTotal=0, sinaisTxt="";
+    for(let s=0;s<3;s++){
+      ultimo = Math.round((ultimo + inc[idx])*100)/100;
+      somaNormais+=ultimo; diaTotal+=ultimo;
+      sinaisTxt += ultimo.toFixed(2) + " ";
+      idx=1-idx;
+    }
+    let isExtra = (diaSemana===0||diaSemana===2||diaSemana===5);
+    if(isExtra){ extras+=3; diaTotal+=3; sinaisTxt += "+ 3.00 extra"; }
+    linhas += `<tr><td>${data.toLocaleDateString('pt-PT')}</td><td>${sinaisTxt}</td><td class="${isExtra?'extra':''}">${diaTotal.toFixed(2)}</td></tr>`;
+  }
+  let ganho = somaNormais+extras;
+  let final = total+ganho;
+  document.getElementById('res').style.display='block';
+  document.getElementById('dataTxt').innerText = "Previsão para " + dataFim.toLocaleDateString('pt-PT') + " • " + dias + " dias";
+  document.getElementById('totalFinal').innerText = final.toFixed(2) + " USDT";
+  document.getElementById('detalhe').innerHTML = `Ganho no período: <b>${ganho.toFixed(2)}</b><br>Sinais normais (${dias*3}): ${somaNormais.toFixed(2)}<br>Sinais extra (${extras/3} dias): ${extras.toFixed(2)}<br>Último sinal: ${ultimo.toFixed(2)}`;
+  document.getElementById('tabela').innerHTML = `<table><tr><th>Data</th><th>Sinais</th><th>Total Dia</th></tr>${linhas}</table>`;
+  window.scrollTo({top:document.body.scrollHeight, behavior:'smooth'});
+}
+function confirmar(){
+  let ultimo = parseFloat(document.getElementById('ultimo').value);
+  let total = parseFloat(document.getElementById('total').value);
+  // Descobre próximo incremento: precisamos saber se último passo foi +0.02 ou +0.03
+  // Simplificação: alterna a partir de 4.52. Usamos o valor guardado.
+  let proximoInc = parseFloat(localStorage.getItem('proxInc') || '0.02');
+  let novo = Math.round((ultimo + proximoInc)*100)/100;
+  let novoTotal = Math.round((total + novo)*100)/100;
+  document.getElementById('ultimo').value = novo.toFixed(2);
+  document.getElementById('total').value = novoTotal.toFixed(2);
+  localStorage.setItem('proxInc', proximoInc===0.02 ? '0.03' : '0.02');
+  alert(`Sinal confirmado: ${novo.toFixed(2)} USDT\nNovo total: ${novoTotal.toFixed(2)} USDT`);
+}
+</script>
+</body>
+</html>
